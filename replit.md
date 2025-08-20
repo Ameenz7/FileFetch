@@ -35,3 +35,6 @@ A clean, professional React-based web application for downloading files directly
 ## Recent Changes
 - Initial project setup (August 20, 2025)
 - Focused on direct download functionality per user preference
+- Created simplified, clean interface inspired by VirusTotal design
+- Removed download history as requested - just paste URL and download
+- Fixed browser compatibility issues with icon imports

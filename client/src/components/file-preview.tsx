@@ -1,4 +1,4 @@
-import { Check, AlertCircle } from 'lucide-react';
+import { Check, AlertCircle, File, FileVideo, FileAudio, FileText, FileImage, Archive } from 'lucide-react';
 import { FileInfo } from '@/types/download';
 import { formatFileSize } from '@/lib/file-utils';
 import { Badge } from '@/components/ui/badge';
@@ -21,9 +21,18 @@ export function FilePreview({ fileInfo, isValid = true }: FilePreviewProps) {
     }
   };
 
-  const IconComponent = require('lucide-react')[fileInfo.icon.split('-').map(word => 
-    word.charAt(0).toUpperCase() + word.slice(1)
-  ).join('')] || require('lucide-react').File;
+  const getIconComponent = () => {
+    switch (fileInfo.type.toLowerCase()) {
+      case 'video': return FileVideo;
+      case 'audio': return FileAudio;
+      case 'document': return FileText;
+      case 'image': return FileImage;
+      case 'archive': return Archive;
+      default: return File;
+    }
+  };
+
+  const IconComponent = getIconComponent();
 
   return (
     <Card className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">

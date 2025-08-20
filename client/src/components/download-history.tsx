@@ -82,9 +82,17 @@ export function DownloadHistoryComponent({
       <CardContent className="p-0">
         <div className="divide-y divide-gray-200 dark:divide-gray-700">
           {history.slice(0, 5).map((item) => {
-            const IconComponent = require('lucide-react')[item.icon.split('-').map(word => 
-              word.charAt(0).toUpperCase() + word.slice(1)
-            ).join('')] || require('lucide-react').File;
+            const getIconComponent = () => {
+              switch (item.fileType.toLowerCase()) {
+                case 'video': return require('lucide-react').FileVideo;
+                case 'audio': return require('lucide-react').FileAudio;
+                case 'document': return require('lucide-react').FileText;
+                case 'image': return require('lucide-react').FileImage;
+                case 'archive': return require('lucide-react').Archive;
+                default: return require('lucide-react').File;
+              }
+            };
+            const IconComponent = getIconComponent();
 
             return (
               <div 

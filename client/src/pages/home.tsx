@@ -1,5 +1,5 @@
-import { FileDownloader } from '@/components/file-downloader';
+import { SimpleDownloader } from '@/components/simple-downloader';
 
 export default function Home() {
-  return <FileDownloader />;
+  return <SimpleDownloader />;
 }
