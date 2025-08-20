@@ -1,0 +1,96 @@
+Prompt for Building a Minimalist Professional File Downloader
+
+Objective:
+Build a minimalist, professional web application that allows users to download audio, video (mp4), text, or other supported files directly via inputted URLs.
+
+Core Tech Stack:
+
+React.js with Vite for fast builds and modern DX.
+
+Tailwind CSS for utility-first styling with minimalist UI.
+
+shadcn/ui for clean, reusable components (input, buttons, cards, modals).
+
+lucide-react for icons (download, link, file types).
+
+framer-motion for subtle animations and microinteractions.
+
+Axios (or Fetch API) for handling downloads.
+
+file-saver (npm package) for saving files locally.
+
+Core Features
+
+URL Input Field
+
+Clean, centered input box for users to paste a file URL.
+
+Detects file type by extension (.mp4, .mp3, .txt, .pdf, etc.).
+
+File Preview & Info (Optional)
+
+Show detected file type with an icon (video, audio, text, generic file).
+
+Display filename (parsed from URL) and approximate size (if accessible via headers).
+
+Download Controls
+
+Large, minimalist Download button.
+
+Option to choose download type (direct/raw vs. converted formats if applicable).
+
+Minimalist UI/UX
+
+White/neutral background, centered card layout, professional font (e.g., Inter).
+
+Rounded containers with soft shadows (rounded-2xl shadow-lg).
+
+Responsive grid system (mobile-first).
+
+Animations: smooth fade-ins for components, button hover scaling.
+
+Error Handling
+
+If a URL is invalid or file is unsupported, show a subtle red toast/alert.
+
+Retry button if download fails.
+
+Download History (Optional)
+
+Store previous downloads in localStorage.
+
+Display last 3–5 downloads in a small sidebar or dropdown.
+
+User Flow
+
+User visits the site → clean hero section with title: “Minimalist File Downloader”.
+
+Enters a valid URL → app validates and checks headers.
+
+Shows file type & filename → enables Download button.
+
+User clicks Download → file starts downloading locally (using file-saver).
+
+Success toast confirms completion.
+
+Example UI Layout
+
+Top Navbar (minimal text/logo)
+
+Center Card (main action):
+
+Input field + Paste button.
+
+File type preview + Download button.
+
+Optional Bottom Section: Download history / info.
+
+Bonus Enhancements
+
+Dark/light mode toggle (with tailwind-dark-mode).
+
+Drag & drop URL or file links.
+
+Keyboard shortcuts (Enter = download).
+
+Progress bar during file fetch.
