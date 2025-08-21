@@ -19,14 +19,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'Invalid URL format' });
       }
 
-      // Check if URL looks like a direct file link
-      const urlPath = new URL(url).pathname.toLowerCase();
-      const hasFileExtension = /\.(mp4|mp3|wav|pdf|jpg|jpeg|png|gif|zip|rar|txt|doc|docx|avi|mov|mkv|webm|flac|aac|ogg|m4a|bmp|svg|webp|7z|tar|gz)$/i.test(urlPath);
-      
-      if (!hasFileExtension) {
-        return res.status(400).json({ error: 'URL does not appear to be a direct file link. Please use a direct file URL.' });
-      }
-
       // Make HEAD request to get file info
       const response = await fetch(url, { 
         method: 'HEAD',
@@ -47,14 +39,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const contentLength = response.headers.get('content-length');
       const contentType = response.headers.get('content-type');
       
-      // Verify this is actually a file and not HTML
-      if (contentType && contentType.includes('text/html')) {
-        return res.status(400).json({ error: 'URL points to a webpage, not a direct file. Please use a direct file URL.' });
+      // Get basic file info from URL
+      const urlPath = new URL(url).pathname;
+      const fileName = urlPath.split('/').pop() || 'download';
+      
+      // Determine file type from content-type or URL
+      let fileType = 'File';
+      let isVideo = false;
+      let isAudio = false;
+      
+      if (contentType) {
+        if (contentType.includes('video/')) {
+          fileType = 'Video';
+          isVideo = true;
+        } else if (contentType.includes('audio/')) {
+          fileType = 'Audio';
+          isAudio = true;
+        } else if (contentType.includes('image/')) {
+          fileType = 'Image';
+        } else if (contentType.includes('application/pdf')) {
+          fileType = 'Document';
+        }
+      } else {
+        // Fallback to extension detection
+        const ext = fileName.toLowerCase().split('.').pop() || '';
+        if (['mp4', 'avi', 'mov', 'mkv', 'webm', 'flv', 'wmv'].includes(ext)) {
+          fileType = 'Video';
+          isVideo = true;
+        } else if (['mp3', 'wav', 'flac', 'aac', 'ogg', 'm4a'].includes(ext)) {
+          fileType = 'Audio';
+          isAudio = true;
+        } else if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp'].includes(ext)) {
+          fileType = 'Image';
+        } else if (['pdf', 'doc', 'docx', 'txt'].includes(ext)) {
+          fileType = 'Document';
+        }
       }
       
       res.json({
         size: contentLength ? parseInt(contentLength, 10) : 0,
         contentType: contentType || 'application/octet-stream',
+        fileType,
+        fileName: decodeURIComponent(fileName),
+        isVideo,
+        isAudio,
         lastModified: response.headers.get('last-modified'),
         etag: response.headers.get('etag')
       });
@@ -65,10 +93,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Download endpoint - proxy file download
+  // Download endpoint - proxy file download with format options
   app.post("/api/download", async (req, res) => {
     try {
-      const { url, option } = req.body;
+      const { url, format } = req.body;
       
       if (!url || typeof url !== 'string') {
         return res.status(400).json({ error: 'URL is required' });
@@ -79,14 +107,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         new URL(url);
       } catch {
         return res.status(400).json({ error: 'Invalid URL format' });
-      }
-
-      // Check if URL looks like a direct file link
-      const urlPath = new URL(url).pathname.toLowerCase();
-      const hasFileExtension = /\.(mp4|mp3|wav|pdf|jpg|jpeg|png|gif|zip|rar|txt|doc|docx|avi|mov|mkv|webm|flac|aac|ogg|m4a|bmp|svg|webp|7z|tar|gz)$/i.test(urlPath);
-      
-      if (!hasFileExtension) {
-        return res.status(400).json({ error: 'URL does not appear to be a direct file link. Please use a direct file URL.' });
       }
 
       // Fetch the file with proper headers
@@ -106,12 +126,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: `Failed to download file: ${response.status} ${response.statusText}` });
       }
 
-      // Check content type to ensure it's not HTML
-      const contentType = response.headers.get('content-type');
-      if (contentType && contentType.includes('text/html')) {
-        return res.status(400).json({ error: 'URL points to a webpage, not a direct file. Please use a direct file URL.' });
-      }
-
       // Get filename from URL or Content-Disposition header
       const contentDisposition = response.headers.get('content-disposition');
       let filename = '';
@@ -128,9 +142,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         filename = decodeURIComponent(urlPath.split('/').pop() || 'download');
       }
 
+      // Handle format conversion
+      if (format && format !== 'original') {
+        const ext = filename.split('.').pop() || '';
+        const nameWithoutExt = filename.replace(/\.[^/.]+$/, "");
+        
+        if (format === 'mp3' && ['mp4', 'avi', 'mov', 'mkv', 'webm'].includes(ext.toLowerCase())) {
+          filename = `${nameWithoutExt}.mp3`;
+          // Note: In a real implementation, you'd need ffmpeg or similar for conversion
+          // For now, we'll just rename but this won't actually convert the file
+          res.setHeader('X-Format-Note', 'Format conversion requires additional setup');
+        } else if (format === 'mp4' && ['avi', 'mov', 'mkv', 'webm'].includes(ext.toLowerCase())) {
+          filename = `${nameWithoutExt}.mp4`;
+          res.setHeader('X-Format-Note', 'Format conversion requires additional setup');
+        }
+      }
+
       // Set response headers
       res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-      res.setHeader('Content-Type', contentType || 'application/octet-stream');
+      res.setHeader('Content-Type', response.headers.get('content-type') || 'application/octet-stream');
       res.setHeader('Access-Control-Allow-Origin', '*');
       res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
       

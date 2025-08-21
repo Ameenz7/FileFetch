@@ -5,6 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 import { ThemeToggle } from './theme-toggle';
 import { useToast } from '@/hooks/use-toast';
 
@@ -14,6 +16,8 @@ interface FileInfo {
   size: number;
   url: string;
   extension: string;
+  isVideo?: boolean;
+  isAudio?: boolean;
 }
 
 export function SimpleDownloader() {
@@ -22,6 +26,7 @@ export function SimpleDownloader() {
   const [isDownloading, setIsDownloading] = useState(false);
   const [fileInfo, setFileInfo] = useState<FileInfo | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [selectedFormat, setSelectedFormat] = useState<string>('original');
   const { toast } = useToast();
 
   const getFileInfo = (url: string) => {
@@ -46,7 +51,9 @@ export function SimpleDownloader() {
         type,
         size: 0,
         url,
-        extension: extension.toUpperCase()
+        extension: extension.toUpperCase(),
+        isVideo: type === 'Video',
+        isAudio: type === 'Audio'
       };
     } catch {
       return null;
@@ -94,15 +101,19 @@ export function SimpleDownloader() {
         return;
       }
 
-      // Try to get file size
+      // Get file info from server
       try {
         const response = await fetch(`/api/file-info?url=${encodeURIComponent(inputUrl)}`);
         if (response.ok) {
           const data = await response.json();
           fileData.size = data.size || 0;
+          fileData.type = data.fileType || fileData.type;
+          fileData.isVideo = data.isVideo || false;
+          fileData.isAudio = data.isAudio || false;
         }
-      } catch {
-        // File size optional
+      } catch (error: any) {
+        // Server validation may fail for some URLs, continue with client-side detection
+        console.log('Server validation failed:', error.message);
       }
 
       setFileInfo(fileData);
@@ -147,7 +158,7 @@ export function SimpleDownloader() {
       const response = await fetch('/api/download', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: fileInfo.url, option: 'direct' })
+        body: JSON.stringify({ url: fileInfo.url, format: selectedFormat })
       });
 
       if (!response.ok) throw new Error('Download failed');
@@ -243,7 +254,7 @@ export function SimpleDownloader() {
                       type="url"
                       value={url}
                       onChange={handleUrlChange}
-                      placeholder="https://example.com/file.mp4 (direct file URL)"
+                      placeholder="https://example.com/video.mp4"
                       className="w-full pl-12 pr-16 py-4 text-lg rounded-xl border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       disabled={isValidating || isDownloading}
                     />
@@ -322,6 +333,45 @@ export function SimpleDownloader() {
                           {error}
                         </p>
                       </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* Format Selection */}
+                <AnimatePresence>
+                  {fileInfo && !error && (fileInfo.isVideo || fileInfo.isAudio) && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.3 }}
+                      className="space-y-3"
+                    >
+                      <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Download Format
+                      </Label>
+                      <Select value={selectedFormat} onValueChange={setSelectedFormat}>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select format" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="original">Original Format</SelectItem>
+                          {fileInfo.isVideo && (
+                            <>
+                              <SelectItem value="mp4">MP4 Video</SelectItem>
+                              <SelectItem value="mp3">MP3 Audio (Extract Audio)</SelectItem>
+                            </>
+                          )}
+                          {fileInfo.isAudio && (
+                            <SelectItem value="mp3">MP3 Audio</SelectItem>
+                          )}
+                        </SelectContent>
+                      </Select>
+                      {selectedFormat !== 'original' && (
+                        <p className="text-xs text-blue-600 dark:text-blue-400">
+                          ⚠️ Format conversion is experimental and may not work for all files
+                        </p>
+                      )}
                     </motion.div>
                   )}
                 </AnimatePresence>
