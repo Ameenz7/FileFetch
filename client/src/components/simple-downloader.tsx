@@ -295,30 +295,71 @@ export function SimpleDownloader() {
                       className="bg-gray-50 dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700"
                     >
                       <div className="flex items-center space-x-4">
-                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${getIconColor(fileInfo.type)}`}>
-                          {(() => {
-                            const IconComponent = getIcon(fileInfo.type);
-                            return <IconComponent className="w-6 h-6" />;
-                          })()}
-                        </div>
+                        {(fileInfo as any).thumbnail ? (
+                          <div className="w-16 h-12 rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-700 flex-shrink-0">
+                            <img 
+                              src={(fileInfo as any).thumbnail} 
+                              alt="Video thumbnail"
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = 'none';
+                                target.nextElementSibling!.classList.remove('hidden');
+                              }}
+                            />
+                            <div className={`hidden w-full h-full rounded-xl flex items-center justify-center ${getIconColor(fileInfo.type)}`}>
+                              {(() => {
+                                const IconComponent = getIcon(fileInfo.type);
+                                return <IconComponent className="w-6 h-6" />;
+                              })()}
+                            </div>
+                          </div>
+                        ) : (
+                          <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${getIconColor(fileInfo.type)}`}>
+                            {(() => {
+                              const IconComponent = getIcon(fileInfo.type);
+                              return <IconComponent className="w-6 h-6" />;
+                            })()}
+                          </div>
+                        )}
                         <div className="flex-1 min-w-0">
                           <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 truncate">
                             {fileInfo.name}
                           </h3>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">
-                            {fileInfo.type} File • {formatFileSize(fileInfo.size)}
-                            {(fileInfo as any).isYouTube && (
-                              <> • <span className="text-red-500 font-medium">YouTube</span></>
-                            )}
-                            {(fileInfo as any).duration && (
-                              <> • {Math.floor((fileInfo as any).duration / 60)}:{((fileInfo as any).duration % 60).toString().padStart(2, '0')}</>
-                            )}
-                          </p>
-                          {(fileInfo as any).author && (
-                            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                              by {(fileInfo as any).author}
+                          <div className="space-y-1">
+                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                              {fileInfo.type} File • {formatFileSize(fileInfo.size)}
+                              {(fileInfo as any).isYouTube && (
+                                <> • <span className="text-red-500 font-medium">YouTube</span></>
+                              )}
+                              {(fileInfo as any).duration && (
+                                <> • {Math.floor((fileInfo as any).duration / 60)}:{((fileInfo as any).duration % 60).toString().padStart(2, '0')}</>
+                              )}
                             </p>
-                          )}
+                            {(fileInfo as any).author && (
+                              <p className="text-xs text-gray-400 dark:text-gray-500">
+                                by {(fileInfo as any).author}
+                              </p>
+                            )}
+                            <div className="text-xs text-gray-400 dark:text-gray-500 space-y-1 mt-2">
+                              <div className="flex items-center space-x-2">
+                                <span className="font-medium">URL:</span>
+                                <span className="truncate font-mono text-blue-600 dark:text-blue-400">{url}</span>
+                              </div>
+                              {(fileInfo as any).contentType && (
+                                <div className="flex items-center space-x-2">
+                                  <span className="font-medium">Content Type:</span>
+                                  <span className="font-mono">{(fileInfo as any).contentType}</span>
+                                </div>
+                              )}
+                              {(fileInfo as any).lastModified && (
+                                <div className="flex items-center space-x-2">
+                                  <span className="font-medium">Last Modified:</span>
+                                  <span>{new Date((fileInfo as any).lastModified).toLocaleDateString()}</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
                         </div>
                         <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-400">
                           <CheckCircle className="w-3 h-3 mr-1" />
@@ -382,6 +423,14 @@ export function SimpleDownloader() {
                         <p className="text-xs text-blue-600 dark:text-blue-400">
                           ⚠️ Format conversion is experimental and may not work for all files
                         </p>
+                      )}
+                      {(fileInfo as any).isYouTube && (
+                        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3 mt-3">
+                          <p className="text-sm text-yellow-800 dark:text-yellow-300">
+                            <strong>⚠️ YouTube Note:</strong> Direct YouTube downloads are currently unavailable due to API changes. 
+                            For now, please use external tools like yt-dlp or online YouTube downloaders.
+                          </p>
+                        </div>
                       )}
                     </motion.div>
                   )}
