@@ -1,3 +1,4 @@
+<img width="1900" height="1000" alt="image" src="https://github.com/user-attachments/assets/6f03424c-4522-4578-8f74-0d53d21862ff" />
 # Minimalist File Downloader
 
 ## Project Overview
