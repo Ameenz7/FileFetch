@@ -323,48 +323,117 @@ export function SimpleDownloader() {
                           </div>
                         )}
                         <div className="flex-1 min-w-0">
-                          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 truncate">
-                            {fileInfo.name}
-                          </h3>
-                          <div className="space-y-1">
-                            <p className="text-sm text-gray-500 dark:text-gray-400">
-                              {fileInfo.type} File • {formatFileSize(fileInfo.size)}
-                              {(fileInfo as any).isYouTube && (
-                                <> • <span className="text-red-500 font-medium">YouTube</span></>
-                              )}
-                              {(fileInfo as any).duration && (
-                                <> • {Math.floor((fileInfo as any).duration / 60)}:{((fileInfo as any).duration % 60).toString().padStart(2, '0')}</>
-                              )}
-                            </p>
-                            {(fileInfo as any).author && (
-                              <p className="text-xs text-gray-400 dark:text-gray-500">
-                                by {(fileInfo as any).author}
+                          <div className="space-y-3">
+                            <div>
+                              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 truncate">
+                                {fileInfo.name}
+                              </h3>
+                              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                                {fileInfo.type} File
+                                {(fileInfo as any).isYouTube && (
+                                  <> • <span className="text-red-500 font-medium">YouTube</span></>
+                                )}
+                                {(fileInfo as any).duration && (
+                                  <> • {Math.floor((fileInfo as any).duration / 60)}:{((fileInfo as any).duration % 60).toString().padStart(2, '0')}</>
+                                )}
                               </p>
-                            )}
-                            <div className="text-xs text-gray-400 dark:text-gray-500 space-y-1 mt-2">
-                              <div className="flex items-center space-x-2">
-                                <span className="font-medium">URL:</span>
-                                <span className="truncate font-mono text-blue-600 dark:text-blue-400">{url}</span>
+                              {(fileInfo as any).author && (
+                                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                                  by {(fileInfo as any).author}
+                                </p>
+                              )}
+                            </div>
+
+                            {/* File Details - Prominent Display */}
+                            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
+                              <div className="grid grid-cols-2 gap-4">
+                                {/* File Size - Large Display with Visual Indicator */}
+                                <div className="text-center">
+                                  <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                                    {fileInfo.size > 0 ? formatFileSize(fileInfo.size) : 'Unknown'}
+                                  </div>
+                                  <div className="text-xs font-medium text-blue-500 dark:text-blue-300 uppercase tracking-wide">
+                                    File Size
+                                  </div>
+                                  {fileInfo.size > 0 && (
+                                    <div className="mt-2">
+                                      <div className="w-full bg-blue-100 dark:bg-blue-800 rounded-full h-2">
+                                        <div 
+                                          className="bg-blue-500 dark:bg-blue-400 h-2 rounded-full transition-all duration-300"
+                                          style={{
+                                            width: `${Math.min((fileInfo.size / (100 * 1024 * 1024)) * 100, 100)}%`
+                                          }}
+                                        ></div>
+                                      </div>
+                                      <div className="text-xs text-blue-400 dark:text-blue-300 mt-1">
+                                        {fileInfo.size < 1024 * 1024 ? 'Small' : 
+                                         fileInfo.size < 10 * 1024 * 1024 ? 'Medium' : 
+                                         fileInfo.size < 100 * 1024 * 1024 ? 'Large' : 'Very Large'}
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                                
+                                {/* File Type - Large Display with Category */}
+                                <div className="text-center">
+                                  <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                                    {fileInfo.extension}
+                                  </div>
+                                  <div className="text-xs font-medium text-blue-500 dark:text-blue-300 uppercase tracking-wide">
+                                    File Type
+                                  </div>
+                                  <div className="mt-2">
+                                    <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${
+                                      fileInfo.type === 'Video' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' :
+                                      fileInfo.type === 'Audio' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300' :
+                                      fileInfo.type === 'Image' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' :
+                                      fileInfo.type === 'Document' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300' :
+                                      'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                                    }`}>
+                                      {fileInfo.type} File
+                                    </span>
+                                  </div>
+                                </div>
                               </div>
-                              {(fileInfo as any).contentType && (
-                                <div className="flex items-center space-x-2">
-                                  <span className="font-medium">Content Type:</span>
-                                  <span className="font-mono">{(fileInfo as any).contentType}</span>
+                              
+                              {/* Additional Details */}
+                              <div className="mt-4 pt-3 border-t border-blue-200 dark:border-blue-700">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                                  {(fileInfo as any).contentType && (
+                                    <div className="flex justify-between items-center">
+                                      <span className="text-blue-600 dark:text-blue-300 font-medium">Content Type:</span>
+                                      <span className="font-mono text-gray-700 dark:text-gray-300 truncate max-w-32">
+                                        {(fileInfo as any).contentType}
+                                      </span>
+                                    </div>
+                                  )}
+                                  {(fileInfo as any).lastModified && (
+                                    <div className="flex justify-between items-center">
+                                      <span className="text-blue-600 dark:text-blue-300 font-medium">Modified:</span>
+                                      <span className="text-gray-700 dark:text-gray-300">
+                                        {new Date((fileInfo as any).lastModified).toLocaleDateString()}
+                                      </span>
+                                    </div>
+                                  )}
+                                  <div className="flex justify-between items-center">
+                                    <span className="text-blue-600 dark:text-blue-300 font-medium">Status:</span>
+                                    <span className="text-green-600 dark:text-green-400 font-semibold">Ready to Download</span>
+                                  </div>
                                 </div>
-                              )}
-                              {(fileInfo as any).lastModified && (
-                                <div className="flex items-center space-x-2">
-                                  <span className="font-medium">Last Modified:</span>
-                                  <span>{new Date((fileInfo as any).lastModified).toLocaleDateString()}</span>
-                                </div>
-                              )}
+                              </div>
+                            </div>
+
+                            {/* URL Display */}
+                            <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
+                              <div className="space-y-1">
+                                <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Source URL</span>
+                                <span className="text-xs font-mono text-blue-600 dark:text-blue-400 break-all block">
+                                  {url}
+                                </span>
+                              </div>
                             </div>
                           </div>
                         </div>
-                        <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-400">
-                          <CheckCircle className="w-3 h-3 mr-1" />
-                          Ready
-                        </Badge>
                       </div>
                     </motion.div>
                   )}
