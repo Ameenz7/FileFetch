@@ -254,7 +254,7 @@ export function SimpleDownloader() {
                       type="url"
                       value={url}
                       onChange={handleUrlChange}
-                      placeholder="https://example.com/video.mp4"
+                      placeholder="Paste any file URL or YouTube link here..."
                       className="w-full pl-12 pr-16 py-4 text-lg rounded-xl border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       disabled={isValidating || isDownloading}
                     />
@@ -307,7 +307,18 @@ export function SimpleDownloader() {
                           </h3>
                           <p className="text-sm text-gray-500 dark:text-gray-400">
                             {fileInfo.type} File • {formatFileSize(fileInfo.size)}
+                            {(fileInfo as any).isYouTube && (
+                              <> • <span className="text-red-500 font-medium">YouTube</span></>
+                            )}
+                            {(fileInfo as any).duration && (
+                              <> • {Math.floor((fileInfo as any).duration / 60)}:{((fileInfo as any).duration % 60).toString().padStart(2, '0')}</>
+                            )}
                           </p>
+                          {(fileInfo as any).author && (
+                            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                              by {(fileInfo as any).author}
+                            </p>
+                          )}
                         </div>
                         <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-400">
                           <CheckCircle className="w-3 h-3 mr-1" />

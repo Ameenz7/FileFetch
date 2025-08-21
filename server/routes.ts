@@ -1,8 +1,52 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import ytdl from "ytdl-core";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Helper function to check if URL is a YouTube URL
+  const isYouTubeUrl = (url: string): boolean => {
+    try {
+      return ytdl.validateURL(url);
+    } catch {
+      // Fallback check for YouTube URLs
+      return /(?:youtube\.com\/watch\?v=|youtu\.be\/)/.test(url);
+    }
+  };
+
+  // Helper function to get YouTube video info
+  const getYouTubeInfo = async (url: string) => {
+    try {
+      const info = await ytdl.getInfo(url);
+      const videoDetails = info.videoDetails;
+      
+      return {
+        title: videoDetails.title || 'YouTube Video',
+        duration: parseInt(videoDetails.lengthSeconds || '0'),
+        thumbnail: videoDetails.thumbnails?.[0]?.url,
+        author: videoDetails.author?.name || 'Unknown',
+        formats: info.formats.filter(format => format.hasVideo || format.hasAudio)
+      };
+    } catch (error) {
+      console.error('YouTube API Error:', error);
+      // Return basic info if ytdl fails
+      const videoId = extractVideoId(url);
+      return {
+        title: `YouTube Video ${videoId}`,
+        duration: 0,
+        thumbnail: null,
+        author: 'YouTube',
+        formats: []
+      };
+    }
+  };
+
+  // Helper to extract video ID from YouTube URL
+  const extractVideoId = (url: string): string => {
+    const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/);
+    return match ? match[1] : 'unknown';
+  };
+
   // File info endpoint - get file metadata from URL
   app.get("/api/file-info", async (req, res) => {
     try {
@@ -17,6 +61,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
         new URL(url);
       } catch {
         return res.status(400).json({ error: 'Invalid URL format' });
+      }
+
+      // Check if it's a YouTube URL
+      if (isYouTubeUrl(url)) {
+        try {
+          const youtubeInfo = await getYouTubeInfo(url);
+          return res.json({
+            size: 0, // YouTube videos don't have a fixed size
+            contentType: 'video/youtube',
+            fileType: 'Video',
+            fileName: `${youtubeInfo.title}.mp4`,
+            isVideo: true,
+            isAudio: false,
+            isYouTube: true,
+            duration: youtubeInfo.duration,
+            thumbnail: youtubeInfo.thumbnail,
+            author: youtubeInfo.author
+          });
+        } catch (error) {
+          console.error('YouTube error:', error);
+          // Return basic YouTube video info even if ytdl fails
+          const videoId = extractVideoId(url);
+          return res.json({
+            size: 0,
+            contentType: 'video/youtube',
+            fileType: 'Video',
+            fileName: `YouTube_Video_${videoId}.mp4`,
+            isVideo: true,
+            isAudio: false,
+            isYouTube: true,
+            duration: 0,
+            thumbnail: null,
+            author: 'YouTube'
+          });
+        }
       }
 
       // Make HEAD request to get file info
@@ -107,6 +186,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
         new URL(url);
       } catch {
         return res.status(400).json({ error: 'Invalid URL format' });
+      }
+
+      // Handle YouTube URLs
+      if (isYouTubeUrl(url)) {
+        try {
+          const info = await ytdl.getInfo(url);
+          const videoDetails = info.videoDetails;
+          
+          let filename = `${videoDetails.title.replace(/[^a-zA-Z0-9\s]/g, '')}.${format === 'mp3' ? 'mp3' : 'mp4'}`;
+          
+          res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+          
+          if (format === 'mp3') {
+            // Audio only
+            res.setHeader('Content-Type', 'audio/mpeg');
+            const audioStream = ytdl(url, { 
+              quality: 'highestaudio',
+              filter: 'audioonly'
+            });
+            audioStream.pipe(res);
+          } else {
+            // Video (original or mp4)
+            res.setHeader('Content-Type', 'video/mp4');
+            const videoStream = ytdl(url, { 
+              quality: 'highest',
+              filter: 'audioandvideo'
+            });
+            videoStream.pipe(res);
+          }
+          
+          return;
+        } catch (error) {
+          console.error('YouTube download error:', error);
+          return res.status(500).json({ error: 'Failed to download YouTube video' });
+        }
       }
 
       // Fetch the file with proper headers
