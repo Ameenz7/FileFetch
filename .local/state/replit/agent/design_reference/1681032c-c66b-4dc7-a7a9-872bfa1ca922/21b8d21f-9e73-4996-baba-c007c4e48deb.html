@@ -1,0 +1,630 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minimalist File Downloader</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'inter': ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: {
+                            50: '#eff6ff',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8'
+                        }
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.3s ease-in-out',
+                        'slide-up': 'slideUp 0.3s ease-out',
+                        'pulse-slow': 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+                    }
+                }
+            }
+        };
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .file-preview-enter {
+            animation: slideUp 0.3s ease-out;
+        }
+        
+        .progress-bar {
+            background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%);
+            background-size: 200% 100%;
+            animation: progress-shine 2s ease-in-out infinite;
+        }
+        
+        @keyframes progress-shine {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+        
+        .toast {
+            transform: translateX(100%);
+            transition: transform 0.3s ease-in-out;
+        }
+        
+        .toast.show {
+            transform: translateX(0);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-inter antialiased">
+    <!-- Toast Notifications Container -->
+    <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2">
+        <!-- Toasts will be dynamically inserted here -->
+    </div>
+
+    <!-- @COMPONENT: Header -->
+    <header class="bg-white border-b border-gray-200 sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 bg-primary-500 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-download text-white text-sm"></i>
+                    </div>
+                    <h1 class="text-xl font-semibold text-gray-900">File Downloader</h1>
+                </div>
+                
+                <div class="flex items-center space-x-4">
+                    <!-- @STATE: isDarkMode:boolean = false -->
+                    <button id="theme-toggle" class="p-2 rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors duration-200" data-implementation="Toggle between light and dark mode">
+                        <i class="fas fa-sun text-lg"></i>
+                    </button>
+                    
+                    <button id="history-toggle" class="p-2 rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors duration-200" data-implementation="Toggle download history sidebar">
+                        <i class="fas fa-history text-lg"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+    <!-- @END_COMPONENT: Header -->
+
+    <main class="min-h-screen bg-gray-50 py-8">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            
+            <!-- @COMPONENT: HeroSection -->
+            <div class="text-center mb-12 animate-fade-in">
+                <h2 class="text-4xl font-bold text-gray-900 mb-4">
+                    Download Files with Ease
+                </h2>
+                <p class="text-lg text-gray-600 max-w-2xl mx-auto">
+                    Simply paste any file URL and download it instantly. Supports audio, video, documents, and more.
+                </p>
+            </div>
+            <!-- @END_COMPONENT: HeroSection -->
+
+            <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+                
+                <!-- @COMPONENT: MainDownloader -->
+                <div class="lg:col-span-3">
+                    <div class="bg-white rounded-2xl shadow-lg border border-gray-200 p-8 animate-fade-in">
+                        
+                        <!-- URL Input Section -->
+                        <div class="mb-8">
+                            <label for="url-input" class="block text-sm font-medium text-gray-700 mb-2">
+                                File URL
+                            </label>
+                            <div class="relative">
+                                <input 
+                                    type="url" 
+                                    id="url-input" 
+                                    placeholder="Paste your file URL here..."
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors duration-200 text-lg"
+                                    data-bind="urlInput"
+                                    data-event="input:handleUrlInput,keydown:handleKeyDown"
+                                />
+                                <button 
+                                    id="paste-btn"
+                                    class="absolute right-3 top-1/2 transform -translate-y-1/2 px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-600 transition-colors duration-200"
+                                    data-event="click:handlePaste"
+                                >
+                                    <i class="fas fa-paste mr-1"></i>
+                                    Paste
+                                </button>
+                            </div>
+                            
+                            <!-- URL Validation Feedback -->
+                            <div id="url-feedback" class="mt-2 text-sm hidden">
+                                <div class="flex items-center space-x-1">
+                                    <i class="fas fa-check-circle text-green-500"></i>
+                                    <span class="text-green-600">Valid URL detected</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- @COMPONENT: FilePreview -->
+                        <div id="file-preview" class="hidden mb-8 file-preview-enter">
+                            <div class="border border-gray-200 rounded-xl p-6 bg-gray-50">
+                                <div class="flex items-start space-x-4">
+                                    <div id="file-icon" class="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                        <i class="fas fa-file text-primary-500 text-xl"></i>
+                                    </div>
+                                    
+                                    <div class="flex-1 min-w-0">
+                                        <h3 id="file-name" class="text-lg font-medium text-gray-900 truncate" data-bind="detectedFile.name">
+                                            sample-video.mp4
+                                        </h3>
+                                        <div class="flex items-center space-x-4 mt-1 text-sm text-gray-500">
+                                            <span id="file-type" data-bind="detectedFile.type">Video File</span>
+                                            <span id="file-size" data-bind="detectedFile.size">~15.2 MB</span>
+                                        </div>
+                                        
+                                        <!-- File Format Options -->
+                                        <div class="mt-3">
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Download Format</label>
+                                            <div class="flex flex-wrap gap-2">
+                                                <button class="px-3 py-1 bg-primary-500 text-white rounded-lg text-sm font-medium">
+                                                    Original
+                                                </button>
+                                                <button class="px-3 py-1 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg text-sm font-medium transition-colors duration-200">
+                                                    MP3 Audio
+                                                </button>
+                                                <button class="px-3 py-1 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg text-sm font-medium transition-colors duration-200">
+                                                    720p MP4
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- @END_COMPONENT: FilePreview -->
+
+                        <!-- Download Section -->
+                        <div class="space-y-4">
+                            <button 
+                                id="download-btn"
+                                class="w-full bg-primary-500 hover:bg-primary-600 text-white font-medium py-4 px-6 rounded-xl transition-all duration-200 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center space-x-2"
+                                disabled
+                                data-event="click:handleDownload"
+                            >
+                                <i id="download-icon" class="fas fa-download"></i>
+                                <span id="download-text">Enter URL to Download</span>
+                            </button>
+                            
+                            <!-- Progress Bar -->
+                            <div id="progress-container" class="hidden">
+                                <div class="flex justify-between text-sm text-gray-600 mb-1">
+                                    <span>Downloading...</span>
+                                    <span id="progress-percent">0%</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-2">
+                                    <div id="progress-bar" class="progress-bar h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Keyboard Shortcuts Info -->
+                        <div class="mt-6 p-4 bg-gray-50 rounded-xl">
+                            <div class="flex items-center space-x-2 text-sm text-gray-600">
+                                <i class="fas fa-keyboard"></i>
+                                <span><kbd class="px-2 py-1 bg-white rounded border text-xs">Enter</kbd> to download</span>
+                                <span class="mx-2">•</span>
+                                <span><kbd class="px-2 py-1 bg-white rounded border text-xs">Ctrl+V</kbd> to paste</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- @END_COMPONENT: MainDownloader -->
+
+                <!-- @COMPONENT: DownloadHistory -->
+                <div class="lg:col-span-1">
+                    <div class="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 sticky top-24 animate-fade-in">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-semibold text-gray-900">Recent Downloads</h3>
+                            <button class="text-sm text-gray-500 hover:text-gray-700" data-event="click:clearHistory">
+                                Clear
+                            </button>
+                        </div>
+                        
+                        <div id="download-history" class="space-y-3">
+                            <!-- @MAP: downloadHistory.map(item => ( -->
+                            <div class="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200 cursor-pointer" data-event="click:redownload">
+                                <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                    <i class="fas fa-video text-blue-500"></i>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-medium text-gray-900 truncate">sample-video.mp4</p>
+                                    <p class="text-xs text-gray-500">2 min ago</p>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200 cursor-pointer" data-event="click:redownload">
+                                <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                    <i class="fas fa-music text-green-500"></i>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-medium text-gray-900 truncate">song.mp3</p>
+                                    <p class="text-xs text-gray-500">1 hour ago</p>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200 cursor-pointer" data-event="click:redownload">
+                                <div class="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                    <i class="fas fa-file-pdf text-red-500"></i>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-medium text-gray-900 truncate">document.pdf</p>
+                                    <p class="text-xs text-gray-500">3 hours ago</p>
+                                </div>
+                            </div>
+                            <!-- @END_MAP )) -->
+                        </div>
+                        
+                        <div class="mt-4 text-center">
+                            <button class="text-sm text-primary-500 hover:text-primary-600 font-medium" data-event="click:showAllHistory">
+                                View All History
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <!-- @END_COMPONENT: DownloadHistory -->
+            </div>
+
+            <!-- @COMPONENT: SupportedFormats -->
+            <div class="mt-12 bg-white rounded-2xl shadow-lg border border-gray-200 p-8 animate-fade-in">
+                <h3 class="text-xl font-semibold text-gray-900 mb-6 text-center">Supported File Formats</h3>
+                
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                    <div class="text-center">
+                        <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mx-auto mb-3">
+                            <i class="fas fa-video text-blue-500 text-xl"></i>
+                        </div>
+                        <h4 class="font-medium text-gray-900 mb-1">Video</h4>
+                        <p class="text-sm text-gray-500">MP4, AVI, MOV, WMV</p>
+                    </div>
+                    
+                    <div class="text-center">
+                        <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mx-auto mb-3">
+                            <i class="fas fa-music text-green-500 text-xl"></i>
+                        </div>
+                        <h4 class="font-medium text-gray-900 mb-1">Audio</h4>
+                        <p class="text-sm text-gray-500">MP3, WAV, FLAC, OGG</p>
+                    </div>
+                    
+                    <div class="text-center">
+                        <div class="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center mx-auto mb-3">
+                            <i class="fas fa-file-alt text-red-500 text-xl"></i>
+                        </div>
+                        <h4 class="font-medium text-gray-900 mb-1">Documents</h4>
+                        <p class="text-sm text-gray-500">PDF, DOC, TXT, RTF</p>
+                    </div>
+                    
+                    <div class="text-center">
+                        <div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center mx-auto mb-3">
+                            <i class="fas fa-image text-purple-500 text-xl"></i>
+                        </div>
+                        <h4 class="font-medium text-gray-900 mb-1">Images</h4>
+                        <p class="text-sm text-gray-500">JPG, PNG, GIF, WebP</p>
+                    </div>
+                </div>
+            </div>
+            <!-- @END_COMPONENT: SupportedFormats -->
+        </div>
+    </main>
+
+    <!-- @COMPONENT: Footer -->
+    <footer class="bg-white border-t border-gray-200 mt-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="text-center text-gray-500 text-sm">
+                <p>&copy; 2024 File Downloader. Built with modern web technologies.</p>
+            </div>
+        </div>
+    </footer>
+    <!-- @END_COMPONENT: Footer -->
+
+    <script>
+        (() => {
+            // TODO: Implement business logic, API calls, and state management
+            
+            // File type detection mapping
+            const fileTypeMap = {
+                // Video
+                mp4: { icon: 'fas fa-video', type: 'Video File', color: 'blue' },
+                avi: { icon: 'fas fa-video', type: 'Video File', color: 'blue' },
+                mov: { icon: 'fas fa-video', type: 'Video File', color: 'blue' },
+                wmv: { icon: 'fas fa-video', type: 'Video File', color: 'blue' },
+                
+                // Audio
+                mp3: { icon: 'fas fa-music', type: 'Audio File', color: 'green' },
+                wav: { icon: 'fas fa-music', type: 'Audio File', color: 'green' },
+                flac: { icon: 'fas fa-music', type: 'Audio File', color: 'green' },
+                
+                // Documents
+                pdf: { icon: 'fas fa-file-pdf', type: 'PDF Document', color: 'red' },
+                doc: { icon: 'fas fa-file-word', type: 'Word Document', color: 'blue' },
+                docx: { icon: 'fas fa-file-word', type: 'Word Document', color: 'blue' },
+                txt: { icon: 'fas fa-file-alt', type: 'Text File', color: 'gray' },
+                
+                // Images
+                jpg: { icon: 'fas fa-image', type: 'Image File', color: 'purple' },
+                jpeg: { icon: 'fas fa-image', type: 'Image File', color: 'purple' },
+                png: { icon: 'fas fa-image', type: 'Image File', color: 'purple' },
+                gif: { icon: 'fas fa-image', type: 'Image File', color: 'purple' },
+                
+                // Default
+                default: { icon: 'fas fa-file', type: 'File', color: 'gray' }
+            };
+
+            // DOM elements
+            const urlInput = document.getElementById('url-input');
+            const urlFeedback = document.getElementById('url-feedback');
+            const filePreview = document.getElementById('file-preview');
+            const downloadBtn = document.getElementById('download-btn');
+            const downloadText = document.getElementById('download-text');
+            const downloadIcon = document.getElementById('download-icon');
+            const progressContainer = document.getElementById('progress-container');
+            const progressBar = document.getElementById('progress-bar');
+            const progressPercent = document.getElementById('progress-percent');
+            const pasteBtn = document.getElementById('paste-btn');
+
+            // State
+            let currentFile = null;
+            let isDownloading = false;
+
+            // Toast notification system
+            function showToast(message, type = 'info') {
+                const toastContainer = document.getElementById('toast-container');
+                const toast = document.createElement('div');
+                
+                const bgColors = {
+                    success: 'bg-green-500',
+                    error: 'bg-red-500',
+                    info: 'bg-blue-500',
+                    warning: 'bg-yellow-500'
+                };
+                
+                toast.className = `toast flex items-center space-x-3 ${bgColors[type]} text-white px-4 py-3 rounded-lg shadow-lg`;
+                toast.innerHTML = `
+                    <i class="fas fa-${type === 'success' ? 'check' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
+                    <span class="font-medium">${message}</span>
+                `;
+                
+                toastContainer.appendChild(toast);
+                
+                // Show toast
+                setTimeout(() => toast.classList.add('show'), 100);
+                
+                // Remove toast after 3 seconds
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                    setTimeout(() => toast.remove(), 300);
+                }, 3000);
+            }
+
+            // URL validation
+            function isValidUrl(string) {
+                try {
+                    new URL(string);
+                    return true;
+                } catch (_) {
+                    return false;
+                }
+            }
+
+            // File extension detection
+            function getFileExtension(url) {
+                try {
+                    const urlObj = new URL(url);
+                    const pathname = urlObj.pathname;
+                    const extension = pathname.split('.').pop().toLowerCase();
+                    return extension;
+                } catch (_) {
+                    return null;
+                }
+            }
+
+            // Get filename from URL
+            function getFileName(url) {
+                try {
+                    const urlObj = new URL(url);
+                    const pathname = urlObj.pathname;
+                    return pathname.split('/').pop() || 'download';
+                } catch (_) {
+                    return 'download';
+                }
+            }
+
+            // Update file preview
+            function updateFilePreview(url) {
+                const extension = getFileExtension(url);
+                const fileName = getFileName(url);
+                const fileInfo = fileTypeMap[extension] || fileTypeMap.default;
+
+                currentFile = {
+                    url: url,
+                    name: fileName,
+                    extension: extension,
+                    type: fileInfo.type
+                };
+
+                // Update preview elements
+                document.getElementById('file-icon').innerHTML = `<i class="${fileInfo.icon} text-${fileInfo.color}-500 text-xl"></i>`;
+                document.getElementById('file-icon').className = `w-12 h-12 bg-${fileInfo.color}-100 rounded-lg flex items-center justify-center flex-shrink-0`;
+                document.getElementById('file-name').textContent = fileName;
+                document.getElementById('file-type').textContent = fileInfo.type;
+                document.getElementById('file-size').textContent = '~calculating...';
+
+                // Show preview
+                filePreview.classList.remove('hidden');
+                filePreview.classList.add('file-preview-enter');
+
+                // Enable download button
+                downloadBtn.disabled = false;
+                downloadText.textContent = 'Download File';
+                downloadIcon.className = 'fas fa-download';
+            }
+
+            // Handle URL input
+            function handleUrlInput() {
+                const url = urlInput.value.trim();
+                
+                if (url === '') {
+                    // Reset state
+                    filePreview.classList.add('hidden');
+                    urlFeedback.classList.add('hidden');
+                    downloadBtn.disabled = true;
+                    downloadText.textContent = 'Enter URL to Download';
+                    currentFile = null;
+                    return;
+                }
+
+                if (isValidUrl(url)) {
+                    // Show validation feedback
+                    urlFeedback.classList.remove('hidden');
+                    urlInput.classList.remove('border-red-300');
+                    urlInput.classList.add('border-green-300');
+                    
+                    // Update file preview
+                    updateFilePreview(url);
+                } else {
+                    // Show error state
+                    urlInput.classList.remove('border-green-300');
+                    urlInput.classList.add('border-red-300');
+                    urlFeedback.classList.add('hidden');
+                    filePreview.classList.add('hidden');
+                    downloadBtn.disabled = true;
+                    downloadText.textContent = 'Invalid URL';
+                }
+            }
+
+            // Handle paste button
+            async function handlePaste() {
+                try {
+                    const text = await navigator.clipboard.readText();
+                    urlInput.value = text;
+                    handleUrlInput();
+                    showToast('URL pasted successfully', 'success');
+                } catch (err) {
+                    showToast('Failed to access clipboard', 'error');
+                }
+            }
+
+            // Handle download
+            async function handleDownload() {
+                if (!currentFile || isDownloading) return;
+
+                isDownloading = true;
+                downloadBtn.disabled = true;
+                downloadText.textContent = 'Preparing Download...';
+                downloadIcon.className = 'fas fa-spinner fa-spin';
+                progressContainer.classList.remove('hidden');
+
+                try {
+                    // Simulate download progress
+                    let progress = 0;
+                    const progressInterval = setInterval(() => {
+                        progress += Math.random() * 30;
+                        if (progress > 100) progress = 100;
+                        
+                        progressBar.style.width = `${progress}%`;
+                        progressPercent.textContent = `${Math.round(progress)}%`;
+                        
+                        if (progress >= 100) {
+                            clearInterval(progressInterval);
+                            
+                            // Simulate download completion
+                            setTimeout(() => {
+                                showToast(`${currentFile.name} downloaded successfully`, 'success');
+                                
+                                // Add to download history
+                                addToDownloadHistory(currentFile);
+                                
+                                // Reset state
+                                isDownloading = false;
+                                downloadBtn.disabled = false;
+                                downloadText.textContent = 'Download Complete';
+                                downloadIcon.className = 'fas fa-check';
+                                progressContainer.classList.add('hidden');
+                                
+                                // Reset after 2 seconds
+                                setTimeout(() => {
+                                    downloadText.textContent = 'Download File';
+                                    downloadIcon.className = 'fas fa-download';
+                                }, 2000);
+                                
+                            }, 500);
+                        }
+                    }, 100);
+                    
+                    // TODO: Implement actual file download using file-saver library
+                    // const response = await fetch(currentFile.url);
+                    // const blob = await response.blob();
+                    // saveAs(blob, currentFile.name);
+                    
+                } catch (error) {
+                    showToast('Download failed. Please try again.', 'error');
+                    isDownloading = false;
+                    downloadBtn.disabled = false;
+                    downloadText.textContent = 'Download Failed';
+                    downloadIcon.className = 'fas fa-exclamation-triangle';
+                    progressContainer.classList.add('hidden');
+                }
+            }
+
+            // Add to download history
+            function addToDownloadHistory(file) {
+                // TODO: Implement localStorage integration
+                const historyItem = {
+                    ...file,
+                    downloadedAt: new Date().toISOString()
+                };
+                
+                // Mock adding to history UI
+                console.log('Added to history:', historyItem);
+            }
+
+            // Keyboard shortcuts
+            function handleKeyDown(event) {
+                if (event.key === 'Enter' && !downloadBtn.disabled) {
+                    handleDownload();
+                } else if (event.ctrlKey && event.key === 'v') {
+                    event.preventDefault();
+                    handlePaste();
+                }
+            }
+
+            // Event listeners
+            urlInput.addEventListener('input', handleUrlInput);
+            urlInput.addEventListener('keydown', handleKeyDown);
+            pasteBtn.addEventListener('click', handlePaste);
+            downloadBtn.addEventListener('click', handleDownload);
+
+            // Theme toggle functionality
+            document.getElementById('theme-toggle').addEventListener('click', () => {
+                // TODO: Implement dark mode toggle
+                showToast('Dark mode coming soon!', 'info');
+            });
+
+            // History toggle functionality  
+            document.getElementById('history-toggle').addEventListener('click', () => {
+                // TODO: Implement history sidebar toggle
+                showToast('History expanded view coming soon!', 'info');
+            });
+
+        })();
+    </script>
+</body>
+</html>

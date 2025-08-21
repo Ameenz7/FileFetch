@@ -1,0 +1,375 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FileFlow - Professional File Downloader</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'inter': ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                    colors: {
+                        'primary': {
+                            50: '#eff6ff',
+                            500: '#2563eb',
+                            600: '#1d4ed8',
+                            700: '#1e40af',
+                        }
+                    }
+                }
+            }
+        };
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.263.1/lucide.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.263.1/lucide.min.js"></script>
+</head>
+<body class="font-inter bg-gray-50 min-h-screen">
+    <!-- @COMPONENT: Header -->
+    <header class="bg-white border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 bg-primary-500 rounded-lg flex items-center justify-center">
+                        <i data-lucide="download" class="w-5 h-5 text-white"></i>
+                    </div>
+                    <h1 class="text-xl font-semibold text-gray-900">FileFlow</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button data-event="click:toggleTheme" class="p-2 text-gray-400 hover:text-gray-600 transition-colors">
+                        <i data-lucide="moon" class="w-5 h-5"></i>
+                    </button>
+                    <button data-event="click:showHistory" class="p-2 text-gray-400 hover:text-gray-600 transition-colors">
+                        <i data-lucide="history" class="w-5 h-5"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+    <!-- @END_COMPONENT: Header -->
+
+    <!-- @COMPONENT: MainContent -->
+    <main class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <!-- Hero Section -->
+        <div class="text-center mb-12">
+            <div class="inline-flex items-center justify-center w-16 h-16 bg-primary-50 rounded-2xl mb-6">
+                <i data-lucide="globe" class="w-8 h-8 text-primary-500"></i>
+            </div>
+            <h1 class="text-4xl font-bold text-gray-900 mb-4">Professional File Downloader</h1>
+            <p class="text-lg text-gray-600 max-w-2xl mx-auto">Download audio, video, documents, and other files directly from URLs with our secure, minimalist interface.</p>
+        </div>
+
+        <!-- Main Download Interface -->
+        <div class="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
+            <!-- Tab Navigation -->
+            <div class="border-b border-gray-200">
+                <nav class="flex">
+                    <button class="flex-1 py-4 px-6 text-center font-medium text-primary-600 bg-primary-50 border-b-2 border-primary-500">
+                        <i data-lucide="link" class="w-5 h-5 inline mr-2"></i>
+                        URL Download
+                    </button>
+                    <button class="flex-1 py-4 px-6 text-center font-medium text-gray-500 hover:text-gray-700 border-b-2 border-transparent hover:border-gray-300 transition-colors">
+                        <i data-lucide="upload" class="w-5 h-5 inline mr-2"></i>
+                        Drag & Drop
+                    </button>
+                </nav>
+            </div>
+
+            <!-- @STATE: downloadState:string = 'idle' | 'validating' | 'ready' | 'downloading' | 'success' | 'error' -->
+            <!-- @STATE: fileInfo:object = { name, type, size, url } -->
+
+            <!-- URL Input Section -->
+            <div class="p-8">
+                <div class="space-y-6">
+                    <!-- URL Input Field -->
+                    <div class="space-y-2">
+                        <label for="url-input" class="block text-sm font-medium text-gray-700">File URL</label>
+                        <div class="relative">
+                            <input 
+                                type="url" 
+                                id="url-input"
+                                data-bind="urlInput"
+                                data-event="input:validateUrl"
+                                placeholder="https://example.com/file.mp4"
+                                class="w-full px-4 py-3 pl-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
+                                data-mock="true"
+                            />
+                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                <i data-lucide="link" class="h-5 w-5 text-gray-400"></i>
+                            </div>
+                            <button 
+                                data-event="click:pasteFromClipboard"
+                                class="absolute inset-y-0 right-0 pr-4 flex items-center text-primary-500 hover:text-primary-600 transition-colors"
+                            >
+                                <i data-lucide="clipboard" class="h-5 w-5"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- File Preview Card (shown when URL is validated) -->
+                    <div class="bg-gray-50 rounded-xl p-6 border border-gray-200" data-mock="true" data-implementation="Show when file is detected">
+                        <div class="flex items-start space-x-4">
+                            <div class="flex-shrink-0">
+                                <div class="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center">
+                                    <i data-lucide="video" class="w-6 h-6 text-red-600"></i>
+                                </div>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <h3 class="text-sm font-medium text-gray-900 truncate" data-bind="fileInfo.name">sample-video.mp4</h3>
+                                <p class="text-sm text-gray-500">Video File • <span data-bind="fileInfo.size">25.6 MB</span></p>
+                                <p class="text-xs text-gray-400 mt-1 truncate" data-bind="fileInfo.url">https://example.com/files/sample-video.mp4</p>
+                            </div>
+                            <div class="flex-shrink-0">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    <i data-lucide="check" class="w-3 h-3 mr-1"></i>
+                                    Valid
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Download Options -->
+                    <div class="space-y-4" data-mock="true" data-implementation="Show when file is ready">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div class="flex items-center space-x-3 p-4 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer">
+                                <input type="radio" name="download-type" id="direct" class="text-primary-500 focus:ring-primary-500" checked>
+                                <div class="flex-1">
+                                    <label for="direct" class="block text-sm font-medium text-gray-900 cursor-pointer">Direct Download</label>
+                                    <p class="text-xs text-gray-500">Download file as-is</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-3 p-4 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer">
+                                <input type="radio" name="download-type" id="optimized" class="text-primary-500 focus:ring-primary-500">
+                                <div class="flex-1">
+                                    <label for="optimized" class="block text-sm font-medium text-gray-900 cursor-pointer">Optimized</label>
+                                    <p class="text-xs text-gray-500">Compress for faster download</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Download Progress (shown during download) -->
+                        <div class="hidden bg-primary-50 rounded-xl p-4 border border-primary-200" data-implementation="Show during download">
+                            <div class="flex items-center space-x-3 mb-2">
+                                <i data-lucide="download" class="w-5 h-5 text-primary-600 animate-pulse"></i>
+                                <span class="text-sm font-medium text-primary-900">Downloading...</span>
+                                <span class="text-sm text-primary-600 ml-auto">68%</span>
+                            </div>
+                            <div class="w-full bg-primary-200 rounded-full h-2">
+                                <div class="bg-primary-600 h-2 rounded-full transition-all duration-300" style="width: 68%"></div>
+                            </div>
+                            <p class="text-xs text-primary-700 mt-2">17.2 MB of 25.6 MB • 2 minutes remaining</p>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="flex flex-col sm:flex-row gap-3">
+                            <button 
+                                data-event="click:startDownload"
+                                data-implementation="Should validate URL and start download process"
+                                class="flex-1 inline-flex items-center justify-center px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-xl transition-colors focus:ring-4 focus:ring-primary-100"
+                            >
+                                <i data-lucide="download" class="w-5 h-5 mr-2"></i>
+                                Download File
+                            </button>
+                            <button 
+                                data-event="click:previewFile"
+                                class="inline-flex items-center justify-center px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-xl transition-colors"
+                            >
+                                <i data-lucide="eye" class="w-5 h-5 mr-2"></i>
+                                Preview
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Download History Section -->
+        <div class="mt-8 bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h2 class="text-lg font-semibold text-gray-900 flex items-center">
+                    <i data-lucide="history" class="w-5 h-5 mr-2 text-gray-600"></i>
+                    Recent Downloads
+                </h2>
+            </div>
+            <div class="divide-y divide-gray-200">
+                <!-- @MAP: downloadHistory.map(item => ( -->
+                <div class="px-6 py-4 hover:bg-gray-50 transition-colors" data-mock="true">
+                    <div class="flex items-center space-x-4">
+                        <div class="flex-shrink-0">
+                            <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                                <i data-lucide="file-audio" class="w-5 h-5 text-blue-600"></i>
+                            </div>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-medium text-gray-900 truncate">podcast-episode-142.mp3</p>
+                            <p class="text-sm text-gray-500">Audio • 42.1 MB • Downloaded 2 hours ago</p>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <button class="p-2 text-gray-400 hover:text-gray-600 transition-colors">
+                                <i data-lucide="download" class="w-4 h-4"></i>
+                            </button>
+                            <button class="p-2 text-gray-400 hover:text-gray-600 transition-colors">
+                                <i data-lucide="external-link" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="px-6 py-4 hover:bg-gray-50 transition-colors" data-mock="true">
+                    <div class="flex items-center space-x-4">
+                        <div class="flex-shrink-0">
+                            <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                                <i data-lucide="file-text" class="w-5 h-5 text-green-600"></i>
+                            </div>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-medium text-gray-900 truncate">research-paper.pdf</p>
+                            <p class="text-sm text-gray-500">Document • 8.7 MB • Downloaded yesterday</p>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <button class="p-2 text-gray-400 hover:text-gray-600 transition-colors">
+                                <i data-lucide="download" class="w-4 h-4"></i>
+                            </button>
+                            <button class="p-2 text-gray-400 hover:text-gray-600 transition-colors">
+                                <i data-lucide="external-link" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <!-- @END_MAP )) -->
+                <div class="px-6 py-4 text-center">
+                    <button class="text-sm text-primary-600 hover:text-primary-700 font-medium">
+                        View All Downloads
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Features Grid -->
+        <div class="mt-12 grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div class="text-center">
+                <div class="inline-flex items-center justify-center w-12 h-12 bg-primary-50 rounded-xl mb-4">
+                    <i data-lucide="shield-check" class="w-6 h-6 text-primary-600"></i>
+                </div>
+                <h3 class="text-lg font-semibold text-gray-900 mb-2">Secure Downloads</h3>
+                <p class="text-gray-600">All downloads are scanned and verified for safety before processing.</p>
+            </div>
+            <div class="text-center">
+                <div class="inline-flex items-center justify-center w-12 h-12 bg-primary-50 rounded-xl mb-4">
+                    <i data-lucide="zap" class="w-6 h-6 text-primary-600"></i>
+                </div>
+                <h3 class="text-lg font-semibold text-gray-900 mb-2">Lightning Fast</h3>
+                <p class="text-gray-600">Optimized download speeds with intelligent compression options.</p>
+            </div>
+            <div class="text-center">
+                <div class="inline-flex items-center justify-center w-12 h-12 bg-primary-50 rounded-xl mb-4">
+                    <i data-lucide="file-type" class="w-6 h-6 text-primary-600"></i>
+                </div>
+                <h3 class="text-lg font-semibold text-gray-900 mb-2">Universal Support</h3>
+                <p class="text-gray-600">Support for all major file formats including video, audio, documents, and images.</p>
+            </div>
+        </div>
+    </main>
+    <!-- @END_COMPONENT: MainContent -->
+
+    <!-- Success Toast (hidden by default) -->
+    <div id="success-toast" class="fixed top-4 right-4 bg-green-50 border border-green-200 rounded-xl p-4 shadow-lg transform translate-x-full transition-transform duration-300" data-implementation="Show on successful download">
+        <div class="flex items-center space-x-3">
+            <div class="flex-shrink-0">
+                <i data-lucide="check-circle" class="w-6 h-6 text-green-600"></i>
+            </div>
+            <div class="flex-1">
+                <p class="text-sm font-medium text-green-900">Download Complete!</p>
+                <p class="text-sm text-green-700">File saved to your Downloads folder</p>
+            </div>
+            <button class="flex-shrink-0 text-green-400 hover:text-green-600">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Error Toast (hidden by default) -->
+    <div id="error-toast" class="fixed top-4 right-4 bg-red-50 border border-red-200 rounded-xl p-4 shadow-lg transform translate-x-full transition-transform duration-300" data-implementation="Show on download error">
+        <div class="flex items-center space-x-3">
+            <div class="flex-shrink-0">
+                <i data-lucide="alert-circle" class="w-6 h-6 text-red-600"></i>
+            </div>
+            <div class="flex-1">
+                <p class="text-sm font-medium text-red-900">Download Failed</p>
+                <p class="text-sm text-red-700">Please check the URL and try again</p>
+            </div>
+            <button class="flex-shrink-0 text-red-400 hover:text-red-600">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- @COMPONENT: Footer -->
+    <footer class="bg-white border-t border-gray-200 mt-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div class="md:col-span-2">
+                    <div class="flex items-center space-x-3 mb-4">
+                        <div class="w-8 h-8 bg-primary-500 rounded-lg flex items-center justify-center">
+                            <i data-lucide="download" class="w-5 h-5 text-white"></i>
+                        </div>
+                        <h3 class="text-lg font-semibold text-gray-900">FileFlow</h3>
+                    </div>
+                    <p class="text-gray-600 max-w-md">Professional file downloading made simple and secure. Download any file format with confidence.</p>
+                </div>
+                <div>
+                    <h4 class="text-sm font-semibold text-gray-900 mb-4">Features</h4>
+                    <ul class="space-y-2 text-sm text-gray-600">
+                        <li><a href="#" class="hover:text-gray-900 transition-colors">URL Downloads</a></li>
+                        <li><a href="#" class="hover:text-gray-900 transition-colors">File Compression</a></li>
+                        <li><a href="#" class="hover:text-gray-900 transition-colors">Download History</a></li>
+                        <li><a href="#" class="hover:text-gray-900 transition-colors">Security Scanning</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-sm font-semibold text-gray-900 mb-4">Support</h4>
+                    <ul class="space-y-2 text-sm text-gray-600">
+                        <li><a href="#" class="hover:text-gray-900 transition-colors">Help Center</a></li>
+                        <li><a href="#" class="hover:text-gray-900 transition-colors">API Docs</a></li>
+                        <li><a href="#" class="hover:text-gray-900 transition-colors">Contact Us</a></li>
+                        <li><a href="#" class="hover:text-gray-900 transition-colors">Privacy Policy</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-gray-200 mt-8 pt-6 flex flex-col sm:flex-row justify-between items-center">
+                <p class="text-sm text-gray-500">© 2024 FileFlow. All rights reserved.</p>
+                <div class="flex items-center space-x-4 mt-4 sm:mt-0">
+                    <button class="text-gray-400 hover:text-gray-600 transition-colors">
+                        <i data-lucide="github" class="w-5 h-5"></i>
+                    </button>
+                    <button class="text-gray-400 hover:text-gray-600 transition-colors">
+                        <i data-lucide="twitter" class="w-5 h-5"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </footer>
+    <!-- @END_COMPONENT: Footer -->
+
+    <script>
+        // Initialize Lucide icons
+        (function() {
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+        })();
+
+        // TODO: Implement file type detection
+        // TODO: Implement download progress tracking  
+        // TODO: Implement clipboard paste functionality
+        // TODO: Implement drag and drop support
+        // TODO: Implement download history management
+        // TODO: Implement theme toggle functionality
+        // TODO: Implement error handling and retry logic
+        // TODO: Implement file preview functionality
+        // TODO: Implement toast notification system
+    </script>
+</body>
+</html>
