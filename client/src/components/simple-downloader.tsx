@@ -220,7 +220,10 @@ export function SimpleDownloader() {
             Download files directly from URLs
           </h1>
           <p className="text-lg text-gray-600 dark:text-gray-400">
-            Paste any file URL below to download it instantly
+            Paste a direct file URL below to download it instantly
+          </p>
+          <p className="text-sm text-gray-500 dark:text-gray-500 mt-2">
+            Use direct links ending with file extensions like .mp4, .mp3, .pdf, .jpg, etc.
           </p>
         </motion.div>
 
@@ -240,7 +243,7 @@ export function SimpleDownloader() {
                       type="url"
                       value={url}
                       onChange={handleUrlChange}
-                      placeholder="https://example.com/file.mp4"
+                      placeholder="https://example.com/file.mp4 (direct file URL)"
                       className="w-full pl-12 pr-16 py-4 text-lg rounded-xl border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       disabled={isValidating || isDownloading}
                     />
@@ -260,6 +263,13 @@ export function SimpleDownloader() {
                   </div>
                   {isValidating && (
                     <p className="text-sm text-blue-600 dark:text-blue-400">Validating URL...</p>
+                  )}
+                  {url && !isValidating && !fileInfo && !error && (
+                    <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+                      <p className="text-sm text-blue-800 dark:text-blue-300">
+                        💡 <strong>Tip:</strong> Make sure you're using a direct file link. Right-click on the file and select "Copy link address" or look for direct download links.
+                      </p>
+                    </div>
                   )}
                 </div>
 
